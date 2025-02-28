@@ -18,7 +18,7 @@ export default function Room() {
     const [roomInfo, setRoomInfo] = useState<Database["public"]["Tables"]["t_room"]["Row"]>()
     const [members, setMembers] = useState<Member[]>([])
     const [startReady, setStartReady] = useState(false)
-    const [status, setStatus] = useState<"wait" | "ready">("wait");
+    const [status, setStatus] = useState<"wait" | "ready" | "playing">("wait");
     const [player, setPlayer] = useState<Database["public"]["Tables"]["t_room_member"]["Row"]>()
 
     const fetchRealtimeData = () => {
@@ -32,8 +32,11 @@ export default function Room() {
                         table: "t_room_member",
                     },
                     (payload) => {
-                        // console.log(payload);
-                        if (payload.eventType === "INSERT" || payload.eventType === "DELETE" || payload.eventType === "UPDATE") {
+                        if (payload.eventType === "INSERT" || payload.eventType === "DELETE") {
+                            getRoomMember()
+                        }
+                        if (payload.eventType === "UPDATE" && payload.new.status !== "playing") {
+                            console.log(payload);
                             getRoomMember()
                         }
                     }
@@ -152,6 +155,15 @@ export default function Room() {
 
     const startGame = async () => {
         try {
+            // 人数分の数字の配列をランダムで作成
+            const orderArray = [...Array(roomInfo?.member_limit).keys()].sort(() => Math.random() - 0.5);
+            const settingRes = await Promise.all(members.map(async (member) => {
+                const updateData = {
+                    order: orderArray.shift(),
+                    status: "playing"
+                }
+                const { error } = await supabase.from("t_room_member").update(updateData).eq('user_id', member.user_id).eq('room_id', roomId)
+            }))
             const { error } = await supabase.from("t_room").update({
                 is_start: true
             }).eq('id', roomId)
