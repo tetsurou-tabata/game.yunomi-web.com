@@ -3,9 +3,9 @@ import {roleSetting} from "@/app/define";
 export const getRoleArray = ( member_num: number ) => {
     const cloneArray = [...roleSetting[member_num]]
     for (let i = cloneArray.length - 1; i >= 0; i--) {
-        let rand = Math.floor(Math.random() * (i + 1))
+        const rand = Math.floor(Math.random() * (i + 1))
         // 配列の要素の順番を入れ替える
-        let tmpStorage = cloneArray[i]
+        const tmpStorage = cloneArray[i]
         cloneArray[i] = cloneArray[rand]
         cloneArray[rand] = tmpStorage
     }
