@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/client";
 import { Button } from "@mantine/core";
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from "react";
+import { getRoleArray } from "@/app/functions"
 
 const memberChannelName = "update-room-member";
 
@@ -155,17 +156,22 @@ export default function Room() {
 
     const startGame = async () => {
         try {
+            if (!roomInfo?.member_limit) throw new Error();
+            const member_limit: number = Number(roomInfo?.member_limit);
             // 人数分の数字の配列をランダムで作成
-            const orderArray = [...Array(roomInfo?.member_limit).keys()].sort(() => Math.random() - 0.5);
+            const orderArray = [...Array(member_limit).keys()].sort(() => Math.random() - 0.5);
+            const roleArray = getRoleArray(member_limit);
             const settingRes = await Promise.all(members.map(async (member) => {
                 const updateData = {
+                    role_id: roleArray.shift(),
                     order: orderArray.shift(),
                     status: "playing"
                 }
                 const { error } = await supabase.from("t_room_member").update(updateData).eq('user_id', member.user_id).eq('room_id', roomId)
             }))
             const { error } = await supabase.from("t_room").update({
-                is_start: true
+                is_start: true,
+                step: "formation",
             }).eq('id', roomId)
             if (error) throw error
         } catch (error) {

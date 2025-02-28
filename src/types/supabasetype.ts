@@ -9,6 +9,24 @@
 export type Database = {
   public: {
     Tables: {
+      m_role: {
+        Row: {
+          camp: number | null
+          id: number
+          name: string | null
+        }
+        Insert: {
+          camp?: number | null
+          id?: number
+          name?: string | null
+        }
+        Update: {
+          camp?: number | null
+          id?: number
+          name?: string | null
+        }
+        Relationships: []
+      }
       t_room: {
         Row: {
           created_at: string
@@ -16,6 +34,9 @@ export type Database = {
           is_start: boolean | null
           member_limit: number | null
           member_num: number | null
+          reader: number | null
+          step: string | null
+          trun: number | null
         }
         Insert: {
           created_at?: string
@@ -23,6 +44,9 @@ export type Database = {
           is_start?: boolean | null
           member_limit?: number | null
           member_num?: number | null
+          reader?: number | null
+          step?: string | null
+          trun?: number | null
         }
         Update: {
           created_at?: string
@@ -30,6 +54,9 @@ export type Database = {
           is_start?: boolean | null
           member_limit?: number | null
           member_num?: number | null
+          reader?: number | null
+          step?: string | null
+          trun?: number | null
         }
         Relationships: []
       }
@@ -38,30 +65,49 @@ export type Database = {
           created_at: string
           id: string
           is_owner: boolean | null
-          order: number | null
+          member_flag: boolean | null
+          mission: string | null
+          order: number
+          role_id: number | null
           room_id: string
           status: string | null
           user_id: string | null
+          vote: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           is_owner?: boolean | null
-          order?: number | null
+          member_flag?: boolean | null
+          mission?: string | null
+          order?: number
+          role_id?: number | null
           room_id: string
           status?: string | null
           user_id?: string | null
+          vote?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           is_owner?: boolean | null
-          order?: number | null
+          member_flag?: boolean | null
+          mission?: string | null
+          order?: number
+          role_id?: number | null
           room_id?: string
           status?: string | null
           user_id?: string | null
+          vote?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "t_room_member_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "m_role"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "t_room_member_room_id_fkey"
             columns: ["room_id"]
