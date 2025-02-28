@@ -2,7 +2,7 @@
 import { Database } from "@/types/supabasetype"
 import { createClient } from "@/utils/supabase/client";
 import { useState, useEffect } from "react";
-import { Button } from "@mantine/core";
+import { Button, Title, Paper, Flex, Text } from "@mantine/core";
 import { useRouter } from 'next/navigation'
 import { v4 } from "uuid";
 
@@ -90,18 +90,26 @@ export default function Main() {
     }, [])
 
     return (
-        <div>
-            <h1>Main</h1>
+        <div id="page-main">
+            <Title mb={20} ta="center">ロビー</Title>
             <div className="">
-                {rooms.map((room) => (
-                    <div key={room.id}>
-                        <p>{room.id}</p>
-                        <p>{room.member_num}/{room.member_limit}</p>
-                        <Button onClick={() => enterRoom(room.id, false)} disabled={room.member_num == room.member_limit}>入室</Button>
-                    </div>
-                ))}
+                <Flex
+                    gap="md"
+                    justify="flex-start"
+                    align="flex-start"
+                    direction="column"
+                    mb={100}
+                >
+                    {rooms.map((room) => (
+                        <Paper key={room.id} w={"100%"} p="md" withBorder>
+                            <Text size="sm" fw="bold">{room.id}</Text>
+                            {/* <p>{room.member_num}/{room.member_limit}</p> */}
+                            <Button onClick={() => enterRoom(room.id, false)} mt="sm" w={"100%"} disabled={room.member_num == room.member_limit}>入室</Button>
+                        </Paper>
+                    ))}
+                </Flex>
             </div>
-            <Button onClick={() => createRoom()}>新しい部屋を作成</Button>
+            <Button onClick={() => createRoom()} w={"100%"}>新しい部屋を作成</Button>
         </div>
     )
 }
