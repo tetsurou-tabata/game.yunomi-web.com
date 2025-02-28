@@ -72,7 +72,7 @@ export default function Main() {
             const { data: room, error } = await supabase.from("t_room").insert([
                 {
                     id: roomId,
-                    member_limit: 2,
+                    member_limit: 6,
                 }
             ])
             if (error) throw error
