@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Button, Title, Paper, Flex, Text } from "@mantine/core";
 import { useRouter } from 'next/navigation'
 import { v4 } from "uuid";
+import Loading from "@/app/components/loading";
 
 const channelName = "update-room";
 
@@ -13,6 +14,7 @@ export default function Main() {
     const supabase = createClient();
     const router = useRouter();
     const [rooms, setRooms] = useState<Database["public"]["Tables"]["t_room"]["Row"][]>([]);
+    const [loading, setLoading] = useState(false);
 
     const fetchRealtimeData = () => {
         try {
@@ -48,6 +50,7 @@ export default function Main() {
 
     const enterRoom = async (roomId: string, isOwner: boolean) => {
         try {
+            setLoading(true)
             const { data: user } = await supabase.auth.getUser()
             if (!user) throw new Error();
             const insertData = {
@@ -61,24 +64,27 @@ export default function Main() {
             router.push('/room/' + roomId);
         } catch (error) {
             console.error(error)
+            setLoading(false)
         }
     }
 
     const createRoom = async () => {
         try {
+            setLoading(true);
             const { data: user } = await supabase.auth.getUser()
             if (!user) throw new Error();
             const roomId = v4();
             const { data: room, error } = await supabase.from("t_room").insert([
                 {
                     id: roomId,
-                    member_limit: 6,
+                    member_limit: 2,
                 }
             ])
             if (error) throw error
             enterRoom(roomId, true);
         } catch (error) {
             console.error(error)
+            setLoading(false);
         }
     }
 
@@ -110,6 +116,7 @@ export default function Main() {
                 </Flex>
             </div>
             <Button onClick={() => createRoom()} w={"100%"}>新しい部屋を作成</Button>
+            {loading && <Loading />}
         </div>
     )
 }

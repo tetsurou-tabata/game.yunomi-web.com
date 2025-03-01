@@ -1,12 +1,22 @@
 'use client'
 import { Database } from "@/types/supabasetype"
-import { Button, Checkbox, Radio, Group } from '@mantine/core';
+import { Button, Checkbox, Radio, Group, Flex, Text, Paper, Badge } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { createClient } from "@/utils/supabase/client";
 import { useParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { getRoomMemberAction } from "@/app/utilActions";
 import { stepToString } from "@/app/functions";
+import { missionSetting } from "@/app/define";
+import Loading from "@/app/components/loading";
+import StarRoundedIcon from '@mui/icons-material/StarRounded';
+import HelpIcon from '@mui/icons-material/Help';
+import FaceIcon from '@mui/icons-material/Face';
+import Face2Icon from '@mui/icons-material/Face2';
+import Face3Icon from '@mui/icons-material/Face3';
+import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import PointBoard from "@/app/components/PointBoard";
 
 const roomChannelName = "update-room";
 
@@ -33,6 +43,7 @@ export default function GamePage() {
     const [isMission, setIsMission] = useState<boolean>(false)
     const [missionNum, setMissionNum] = useState<number>(0)
     const [teamLength, setTeamLength] = useState<number>(0)
+    const [loading, setLoading] = useState(false)
 
     const fetchRealtimeRoomData = () => {
         try {
@@ -88,6 +99,10 @@ export default function GamePage() {
             setVote("init")
             setVoteNum(0)
             setIsVote(false)
+            setMission("init")
+            setIsMission(false)
+            setMissionNum(0)
+
         } catch (error) {
             console.error(error)
         }
@@ -194,14 +209,21 @@ export default function GamePage() {
             const res = await getRoomMemberAction(roomId)
             if (!res.data) throw new Error("ルーム情報の取得に失敗しました")
             // ひとつでもnoがある場合は失敗
-            const failMission = res.data.filter((member: Player) => member.vote == "no").length;
-            console.log(failMission)
-            console.log(roomInfo);
-            // if (failMission > 0) {
-            //     const { error } = await supabase.from("t_room").update({
-            //         step: "formation",
-            //     }).eq('id', roomId)
-            // }
+            console.log(res.data);
+            const failMission = res.data.filter((member: Player) => member.mission == "no").length;
+            console.log("failMission", failMission)
+            if (!roomInfo || !roomInfo.turn) throw new Error()
+            const turnIndex = `turn0${roomInfo.turn}`;
+            const nextTurn = (roomInfo?.turn) ? roomInfo.turn + 1 : 1;
+            const nextReader = (roomInfo?.reader != undefined) ? roomInfo.reader + 1 : 0;
+            const updateData = {
+                step: "formation",
+                turn: nextTurn,
+                reader: nextReader,
+                [turnIndex]: failMission
+            }
+            console.log(updateData);
+            const { error } = await supabase.from("t_room").update(updateData).eq('id', roomId)
         } catch (error) {
             console.error(error)
         }
@@ -209,12 +231,14 @@ export default function GamePage() {
 
     const exitGame = async () => {
         try {
+            setLoading(true)
             const { data: member, error: memberError } = await supabase.from("t_room_member").delete().eq('room_id', roomId)
             if (memberError) throw memberError
             const { data: room, error: roomError } = await supabase.from("t_room").delete().eq('id', roomId)
             if (roomError) throw roomError
         } catch (error) {
             console.error(error)
+            setLoading(false)
         }
     }
 
@@ -228,27 +252,57 @@ export default function GamePage() {
     }, [])
 
     return (
-        <div>
-            <h1>Game Page</h1>
-            {roomInfo && roomMember && (
-                roomMember.map((member, index) => (
-                    <div key={index}>
-                        <p>{member.t_user.name} ({member.m_role.name}) {member.member_flag && <span>メンバー</span>}</p>
-                        {roomInfo.step == "voting" && (
-                            member.vote != 'init' ? <p>投票済み</p> : <p>投票中</p>
-                        )}
-                    </div>
-                ))
+        <div id="page-main">
+            {roomInfo && roomMember && player && (
+                <PointBoard roomInfo={roomInfo} />
             )}
 
-            {roomInfo && (
-                <p>現在のフェーズ: {stepToString(roomInfo.step)}</p>
-            )}
-
-            {player && (
-                <p>あなたのロール: {player.m_role.name}</p>
-            )}
-            {player && <p>現在のステータス: {player.status}</p>}
+            <Flex direction={'column'} gap={5}>
+                {roomInfo && roomMember && player && (
+                    roomMember.map((member, index) => (
+                        <Flex align={'center'} gap={5} key={index}>
+                            <Flex align={'center'} className="icon">
+                                {roomInfo.reader == member.order && <StarRoundedIcon style={{ color: '#efdc37' }} />}
+                            </Flex>
+                            <Flex align={'center'} className="icon">
+                                {player.role_id == 1 && member.user_id == player.user_id && (
+                                    <FaceIcon style={{ color: '#228be6' }} />
+                                )}
+                                {player.role_id == 1 && member.user_id != player.user_id && (
+                                    <HelpIcon style={{ color: '#c0c0c0' }} />
+                                )}
+                                {player.role_id != 1 && member.role_id == 1 && (
+                                    <FaceIcon style={{ color: '#228be6' }} />
+                                )}
+                                {player.role_id != 1 && member.role_id == 2 && (
+                                    <FaceIcon style={{ color: '#e62229' }} />
+                                )}
+                                {player.role_id != 1 && member.role_id == 3 && (
+                                    <Face2Icon style={{ color: '#228be6' }} />
+                                )}
+                                {player.role_id != 1 && member.role_id == 4 && (
+                                    <Face3Icon style={{ color: '#e62229' }} />
+                                )}
+                            </Flex>
+                            <Text fw={500}>{member.t_user.name}</Text>
+                            <Flex align={'center'} className="icon">
+                                {player.member_flag && roomInfo.step == "voting" && (
+                                    <ShieldOutlinedIcon style={{ color: '#424242' }} />
+                                )}
+                                {player.member_flag && roomInfo.step == "mission" && (
+                                    <VerifiedUserIcon style={{ color: '#66e05d' }} />
+                                )}
+                            </Flex>
+                            {roomInfo.step == "voting" && (
+                                member.vote != 'init' ? <Badge color="green">投票済</Badge> : <Badge color="blue">投票中</Badge>
+                            )}
+                            {roomInfo.step == "mission" && (
+                                member.mission != 'init' ? <Badge color="green">任務完了</Badge> : <Badge color="blue">任務中</Badge>
+                            )}
+                        </Flex>
+                    ))
+                )}
+            </Flex>
 
             {roomMember && roomInfo && player && (
                 roomInfo.step == "formation" && roomInfo.reader == player.order && (
@@ -284,7 +338,7 @@ export default function GamePage() {
                                 <Radio value="no" label="却下" disabled={isVote} />
                             </Group>
                         </Radio.Group>
-                        <Button mt={20} disabled={!vote || isVote} onClick={commitVote}>
+                        <Button mt={20} disabled={vote == "init" || isVote} onClick={commitVote}>
                             {isVote ? "投票済み" : "投票する"}
                         </Button>
                     </>
@@ -334,6 +388,8 @@ export default function GamePage() {
             {player?.is_owner && (
                 <Button onClick={() => exitGame()}>ゲームを終了</Button>
             )}
+
+            {loading && <Loading />}
         </div>
     )
 }

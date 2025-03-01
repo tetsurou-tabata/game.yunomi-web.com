@@ -36,7 +36,12 @@ export type Database = {
           member_num: number | null
           reader: number | null
           step: string | null
-          trun: number | null
+          turn: number | null
+          turn01: number | null
+          turn02: number | null
+          turn03: number | null
+          turn04: number | null
+          turn05: number | null
         }
         Insert: {
           created_at?: string
@@ -46,7 +51,12 @@ export type Database = {
           member_num?: number | null
           reader?: number | null
           step?: string | null
-          trun?: number | null
+          turn?: number | null
+          turn01?: number | null
+          turn02?: number | null
+          turn03?: number | null
+          turn04?: number | null
+          turn05?: number | null
         }
         Update: {
           created_at?: string
@@ -56,7 +66,12 @@ export type Database = {
           member_num?: number | null
           reader?: number | null
           step?: string | null
-          trun?: number | null
+          turn?: number | null
+          turn01?: number | null
+          turn02?: number | null
+          turn03?: number | null
+          turn04?: number | null
+          turn05?: number | null
         }
         Relationships: []
       }

@@ -1,5 +1,8 @@
 @charset 'utf-8';
 
+$color-blue: #228be6;
+$color-red: #e62229;
+
 body {
     background-color: #f5f5f5;
 }
@@ -10,4 +13,91 @@ body {
 
 #page-main {
     padding-top: 20px;
+}
+
+#loading-cover {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    p {
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: bold;
+    }
+}
+
+.icon {
+    width: 24px;
+    height: 24px;
+}
+
+.board {
+    .quest {
+        .quest-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            height: auto;
+            aspect-ratio: 1;
+            border: 2px solid black;
+            border-radius: 50%;
+            font-weight: bold;
+            gap: 5px;
+            p {
+                margin: 0;
+                padding: 0;
+                line-height: 1;
+            }
+            .sep {
+                width: 40%;
+                height: 2px;
+                background-color: black;
+            }
+            &.current {
+                border: 2px solid #009790;
+            }
+            &.blue {
+                background-color: $color-blue;
+                color: white;
+                border-color: $color-blue;
+                p {
+                    font-size: 0.8rem;
+                }
+                .sep {
+                    background-color: white;
+                }
+            }
+            &.red {
+                background-color: $color-red;
+                color: white;
+                border-color: $color-red;
+                p {
+                    font-size: 0.8rem;
+                }
+                .sep {
+                    background-color: white;
+                }
+            }
+        }
+        .vote-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 12%;
+            height: auto;
+            aspect-ratio: 1;
+            border: 1px solid black;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+    }
 }

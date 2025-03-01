@@ -5,6 +5,7 @@ import { Button } from "@mantine/core";
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from "react";
 import { getRoleArray } from "@/app/functions"
+import Loading from "@/app/components/loading";
 
 const memberChannelName = "update-room-member";
 
@@ -21,6 +22,7 @@ export default function Room() {
     const [startReady, setStartReady] = useState(false)
     const [status, setStatus] = useState<"wait" | "ready" | "playing">("wait");
     const [player, setPlayer] = useState<Database["public"]["Tables"]["t_room_member"]["Row"]>()
+    const [loading, setLoading] = useState(false)
 
     const fetchRealtimeData = () => {
         try {
@@ -55,6 +57,7 @@ export default function Room() {
                         }
                         if (payload.eventType === "UPDATE") {
                             if (payload.new.is_start) {
+                                setLoading(true)
                                 router.push('/game/' + roomId)
                             }
                         }
@@ -145,12 +148,14 @@ export default function Room() {
 
     const removeRoom = async () => {
         try {
+            setLoading(true)
             const { data: member, error: memberError } = await supabase.from("t_room_member").delete().eq('room_id', roomId)
             if (memberError) throw memberError
             const { data: room, error: roomError } = await supabase.from("t_room").delete().eq('id', roomId)
             if (roomError) throw roomError
         } catch (error) {
             console.error(error)
+            setLoading(false)
         }
     }
 
@@ -216,6 +221,7 @@ export default function Room() {
                     <Button onClick={removeRoom}>部屋を解体する</Button>
                 </>
             )}
+            {loading && <Loading />}
         </>
     )
 }

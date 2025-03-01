@@ -1,4 +1,4 @@
-import {roleSetting} from "@/app/define";
+import {roleSetting, missionSetting} from "@/app/define";
 
 export const getRoleArray = ( member_num: number ) => {
     const cloneArray = [...roleSetting[member_num]]
@@ -10,6 +10,12 @@ export const getRoleArray = ( member_num: number ) => {
         cloneArray[rand] = tmpStorage
     }
     return cloneArray
+}
+
+export const getMissionArray = ( member_num: number|null ) => {
+    if( member_num === null ) return []
+    const cloneArray = [...missionSetting[member_num]]
+    return cloneArray;
 }
 
 export const stepToString = ( step: string|null ):string => {
