@@ -34,6 +34,7 @@ export type Database = {
           is_start: boolean | null
           member_limit: number | null
           member_num: number | null
+          name: string | null
           reader: number | null
           step: string | null
           turn: number | null
@@ -42,6 +43,7 @@ export type Database = {
           turn03: number | null
           turn04: number | null
           turn05: number | null
+          vote_count: number | null
         }
         Insert: {
           created_at?: string
@@ -49,6 +51,7 @@ export type Database = {
           is_start?: boolean | null
           member_limit?: number | null
           member_num?: number | null
+          name?: string | null
           reader?: number | null
           step?: string | null
           turn?: number | null
@@ -57,6 +60,7 @@ export type Database = {
           turn03?: number | null
           turn04?: number | null
           turn05?: number | null
+          vote_count?: number | null
         }
         Update: {
           created_at?: string
@@ -64,6 +68,7 @@ export type Database = {
           is_start?: boolean | null
           member_limit?: number | null
           member_num?: number | null
+          name?: string | null
           reader?: number | null
           step?: string | null
           turn?: number | null
@@ -72,6 +77,7 @@ export type Database = {
           turn03?: number | null
           turn04?: number | null
           turn05?: number | null
+          vote_count?: number | null
         }
         Relationships: []
       }

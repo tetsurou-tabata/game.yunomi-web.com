@@ -1,11 +1,13 @@
 'use client'
 import { Database } from "@/types/supabasetype"
 import { createClient } from "@/utils/supabase/client";
-import { Button } from "@mantine/core";
+import { Button, Badge } from "@mantine/core";
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from "react";
 import { getRoleArray } from "@/app/functions"
+import { Title, Flex, Text } from "@mantine/core";
 import Loading from "@/app/components/loading";
+import { notifications } from "@mantine/notifications";
 
 const memberChannelName = "update-room-member";
 
@@ -161,6 +163,7 @@ export default function Room() {
 
     const startGame = async () => {
         try {
+            if (!startReady) throw new Error("準備が完了していません");
             if (!roomInfo?.member_limit) throw new Error();
             const member_limit: number = Number(roomInfo?.member_limit);
             // 人数分の数字の配列をランダムで作成
@@ -180,7 +183,13 @@ export default function Room() {
             }).eq('id', roomId)
             if (error) throw error
         } catch (error) {
-            console.error(error)
+            const message = (error instanceof Error) ? error.message : 'エラーが発生しました';
+            notifications.clean();
+            notifications.show({
+                title: "エラー",
+                color: "red",
+                message: message
+            })
         }
     }
 
@@ -194,34 +203,46 @@ export default function Room() {
     }, [])
 
     return (
-        <>
-            <div>{roomInfo?.id}</div>
-            <p>{members.length}/{roomInfo?.member_limit}</p>
-            <div>
+        <div id="page-main">
+            <Title mb="md" ta="center">{roomInfo?.name}</Title>
+
+            <Text size="lg" fw={700} mb="sm">参加者 ({members.length}/{roomInfo?.member_limit})</Text>
+            <Flex direction={'column'} gap={5} mb="xl">
                 {members.map(member => (
-                    <div key={member.id}>
-                        <p>{member.status}</p>
-                        <p>{member.t_user.name}</p>
-                    </div>
+                    <Flex align={'center'} gap={5} key={member.id}>
+                        {member.is_owner ? (
+                            <Badge color="blue">オーナー</Badge>
+                        ) : (
+                            <Badge color="gray">メンバー</Badge>
+                        )}
+                        <Text fw={500}>{member.t_user.name}</Text>
+                        {member.status == "wait" ? (
+                            <Badge color="gray">準備中</Badge>
+                        ) : (
+                            <Badge color="green">準備OK</Badge>
+                        )}
+                    </Flex>
                 ))}
-            </div>
-            {player && !player.is_owner && (
-                <>
-                    <Button onClick={() => leaveRoom()}>退出</Button>
-                    <Button onClick={() => switchStatus()}>
-                        {status === "wait" ? "準備OK" : "準備完了"}
-                    </Button>
-                </>
-            )}
-            {player && player.is_owner && (
-                <>
-                    <Button disabled={!startReady} onClick={startGame}>
-                        {startReady ? "ゲーム開始" : "準備中"}
-                    </Button>
-                    <Button onClick={removeRoom}>部屋を解体する</Button>
-                </>
+            </Flex>
+
+            {player && (
+                player.is_owner ? (
+                    <Flex direction={'column'} gap="md">
+                        <Button onClick={startGame} color={startReady ? "blue" : "gray"}>
+                            {startReady ? "ゲーム開始" : "メンバーが準備中"}
+                        </Button>
+                        <Button onClick={removeRoom} color="red">部屋を解体する</Button>
+                    </Flex>
+                ) : (
+                    <Flex direction={'column'} gap="md">
+                        <Button onClick={() => switchStatus()} color={status === "wait" ? "blue" : "green"}>
+                            {status === "wait" ? "準備OK" : "準備完了"}
+                        </Button>
+                        <Button color="red" onClick={() => leaveRoom()}>退出</Button>
+                    </Flex>
+                )
             )}
             {loading && <Loading />}
-        </>
+        </div>
     )
 }

@@ -14,8 +14,7 @@ export default function PointBoard(props: Props) {
     const roomInfo = props.roomInfo;
     const stepString = stepToString(roomInfo.step);
     const missionArray = getMissionArray(roomInfo.member_num);
-
-    console.log(roomInfo);
+    const voteCountArray = [1, 2, 3, 4, 5];
 
     return (
         <Paper className="board" withBorder shadow="xs" p="lg" mb="xl">
@@ -46,12 +45,13 @@ export default function PointBoard(props: Props) {
                     )
                 })}
             </Flex>
+            <Text fw={500} mb="xs">投票カウンタ</Text>
             <Flex justify={'start'} gap={"3%"} className="quest">
-                <div className="vote-icon">1</div>
-                <div className="vote-icon">2</div>
-                <div className="vote-icon">3</div>
-                <div className="vote-icon">4</div>
-                <div className="vote-icon">5</div>
+                {voteCountArray.map((_, index) => {
+                    return (
+                        <div key={index} className={`vote-icon ${roomInfo.vote_count && roomInfo.vote_count > index ? "fill" : ""}`}>{voteCountArray[index]}</div>
+                    )
+                })}
             </Flex>
         </Paper>
     )

@@ -6,8 +6,6 @@ import { createClient } from "@/utils/supabase/client";
 import { useParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { getRoomMemberAction } from "@/app/utilActions";
-import { stepToString } from "@/app/functions";
-import { missionSetting } from "@/app/define";
 import Loading from "@/app/components/loading";
 import StarRoundedIcon from '@mui/icons-material/StarRounded';
 import HelpIcon from '@mui/icons-material/Help';
@@ -135,6 +133,11 @@ export default function GamePage() {
 
     const commitTeam = async () => {
         try {
+            const { error: voteInitError } = await supabase.from("t_room_member").update({
+                member_flag: false,
+                vote: "init",
+                mission: "init",
+            }).eq('room_id', roomId)
             const commitRes = await Promise.all(team.map(async (userId: string) => {
                 const updateData = {
                     member_flag: true,
@@ -167,21 +170,26 @@ export default function GamePage() {
     const openVote = async () => {
         try {
             const res = await getRoomMemberAction(roomId)
-            if (!res.data) throw new Error("ルーム情報の取得に失敗しました")
+            if (!res.data) throw new Error("ルーム情報の取得に失敗しました");
+            const memberLength = res.data.length;
             const allowVote = res.data.filter((member: Player) => member.vote == "yes").length;
-            if (allowVote > 0) {
+            if (allowVote > memberLength / 2) {
                 const { error } = await supabase.from("t_room").update({
                     step: "mission",
                 }).eq('id', roomId)
             } else {
-                const memberLength = res.data.length
                 const nextReader: number = (player?.order != undefined && player?.order < memberLength) ? (player?.order + 1) % memberLength : 0;
-                const { error: memberError } = await supabase.from("t_room_member").update({
-                    vote: "init"
-                }).eq('room_id', roomId)
+                // const { error: memberError } = await supabase.from("t_room_member").update({
+                //     vote: "init"
+                // }).eq('room_id', roomId)
+                // if (memberError) throw memberError
+
+                // 現在の投票数を加算
+                const currentVoteCount = roomInfo?.vote_count ?? 0
                 const { error } = await supabase.from("t_room").update({
                     step: "formation",
-                    reader: nextReader
+                    reader: nextReader,
+                    vote_count: currentVoteCount + 1
                 }).eq('id', roomId)
             }
         } catch (error) {
@@ -285,14 +293,19 @@ export default function GamePage() {
                                 )}
                             </Flex>
                             <Text fw={500}>{member.t_user.name}</Text>
-                            <Flex align={'center'} className="icon">
-                                {player.member_flag && roomInfo.step == "voting" && (
-                                    <ShieldOutlinedIcon style={{ color: '#424242' }} />
-                                )}
-                                {player.member_flag && roomInfo.step == "mission" && (
-                                    <VerifiedUserIcon style={{ color: '#66e05d' }} />
-                                )}
-                            </Flex>
+                            {(roomInfo.step == "voting" || roomInfo.step == "mission") && (
+                                <Flex align={'center'} className="icon">
+                                    {player.member_flag && roomInfo.step == "voting" && (
+                                        <ShieldOutlinedIcon style={{ color: '#424242' }} />
+                                    )}
+                                    {player.member_flag && roomInfo.step == "mission" && (
+                                        <VerifiedUserIcon style={{ color: '#66e05d' }} />
+                                    )}
+                                </Flex>
+                            )}
+                            {roomInfo.step != "voting" && member.vote != 'init' && (
+                                member.vote == 'yes' ? <Badge color="blue">承認</Badge> : <Badge color="gray">却下</Badge>
+                            )}
                             {roomInfo.step == "voting" && (
                                 member.vote != 'init' ? <Badge color="green">投票済</Badge> : <Badge color="blue">投票中</Badge>
                             )}

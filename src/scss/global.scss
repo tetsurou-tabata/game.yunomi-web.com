@@ -98,6 +98,11 @@ body {
             border-radius: 50%;
             font-weight: bold;
             font-size: 0.8rem;
+
+            &.fill {
+                background-color: black;
+                color: white;
+            }
         }
     }
 }

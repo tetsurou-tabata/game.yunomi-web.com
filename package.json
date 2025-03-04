@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 8000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -13,6 +13,7 @@
     "@emotion/styled": "^11.14.0",
     "@mantine/core": "^7.17.0",
     "@mantine/hooks": "^7.17.0",
+    "@mantine/notifications": "^7.17.1",
     "@mui/icons-material": "^6.4.6",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.5.2",

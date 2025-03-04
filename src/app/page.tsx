@@ -4,6 +4,7 @@ import { Container, Title, Paper, TextInput, PasswordInput, Text, Anchor, Button
 import style from "@/scss/login-form.module.scss";
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { notifications } from '@mantine/notifications';
 
 export default function Home() {
 
@@ -18,18 +19,24 @@ export default function Home() {
         const email = emailRef.current?.value;
         const password = passwordRef.current?.value;
 
-        if (!email || !password) {
-            alert('入力してください');
-            setLoading(false);
-            return;
-        }
-
-        const res = await login(email, password);
-        if (res.status) {
+        try {
+            if (!email || !password) {
+                throw new Error('入力してください');
+            }
+            const res = await login(email, password);
+            if (res.status == false) {
+                throw new Error(res.message);
+            }
             router.refresh();
+        } catch (error) {
+            const message = (error instanceof Error) ? error.message : 'エラーが発生しました';
+            notifications.show({
+                title: 'ログインエラー',
+                color: 'red',
+                message: message
+            })
+            setLoading(false);
         }
-
-        setLoading(false);
     }
 
     return (

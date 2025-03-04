@@ -1,6 +1,8 @@
 import { MantineProvider } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
 import type { Metadata } from "next";
 import "@mantine/core/styles.css";
+import '@mantine/notifications/styles.css';
 import "@/scss/global.scss";
 
 export const metadata: Metadata = {
@@ -18,7 +20,10 @@ export default function RootLayout({
             <body>
                 <div className="_page-wrapper">
                     <MantineProvider>
-                        {children}
+                        <>
+                            {children}
+                            <Notifications />
+                        </>
                     </MantineProvider>
                 </div>
             </body>
