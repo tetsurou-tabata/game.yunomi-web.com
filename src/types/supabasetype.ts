@@ -36,6 +36,7 @@ export type Database = {
           member_num: number | null
           name: string | null
           reader: number | null
+          status: string | null
           step: string | null
           turn: number | null
           turn01: number | null
@@ -53,6 +54,7 @@ export type Database = {
           member_num?: number | null
           name?: string | null
           reader?: number | null
+          status?: string | null
           step?: string | null
           turn?: number | null
           turn01?: number | null
@@ -70,6 +72,7 @@ export type Database = {
           member_num?: number | null
           name?: string | null
           reader?: number | null
+          status?: string | null
           step?: string | null
           turn?: number | null
           turn01?: number | null

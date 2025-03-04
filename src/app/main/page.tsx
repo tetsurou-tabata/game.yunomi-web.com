@@ -28,7 +28,7 @@ export default function Main() {
 
     const getRooms = async () => {
         try {
-            const { data, error } = await supabase.from("t_room").select("*").order('created_at', { ascending: true })
+            const { data, error } = await supabase.from("t_room").select("*").eq("status", "wait").order('created_at', { ascending: true })
             if (error) throw error
             setRooms(data)
         } catch (error) {
@@ -42,7 +42,7 @@ export default function Main() {
             const { data: user } = await supabase.auth.getUser()
             if (!user) throw new Error("ユーザー情報の取得に失敗しました");
             // 部屋が存在するか確認する
-            const { data: roomInfo, error: roomInfoError } = await supabase.from("t_room").select("*").eq('id', roomId).single()
+            const { data: roomInfo, error: roomInfoError } = await supabase.from("t_room").select("*").eq('id', roomId).eq("status", "wait").single()
             if (roomInfoError) throw new Error("無効になった部屋です");
             if (!roomInfo) throw new Error("部屋が存在しません");
             // ユーザーが部屋に入る
@@ -109,7 +109,11 @@ export default function Main() {
 
             const { data: user } = await supabase.auth.getUser()
             if (!user) throw new Error();
-            const { data: room, error } = await supabase.from("t_room_member").select("*").eq("user_id", user?.user?.id).single()
+            const { data: room, error } = await supabase.from("t_room_member")
+                .select("*, t_room(status)")
+                .eq("user_id", user?.user?.id)
+                .eq("t_room.status", "wait")
+                .single()
             if (room) {
                 setEnteredRoom(room);
                 openEnterdModal();
@@ -148,7 +152,7 @@ export default function Main() {
                         <Paper key={room.id} w={"100%"} p="md" withBorder>
                             <Text size="xl" fw="bold">{room.name}</Text>
                             <Text size="sm" fw="bold">定員：{room.member_limit}</Text>
-                            <Button onClick={() => enterRoom(room.id, false)} mt="sm" w={"100%"} disabled={room.member_num == room.member_limit}>入室</Button>
+                            <Button onClick={() => enterRoom(room.id, false)} mt="sm" w={"100%"} disabled={room.status != "wait"}>入室</Button>
                         </Paper>
                     ))}
                 </Flex>

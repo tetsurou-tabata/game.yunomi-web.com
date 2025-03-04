@@ -1,15 +1,14 @@
 'use client'
+import { useDisclosure } from '@mantine/hooks';
 import { Database } from "@/types/supabasetype"
 import { createClient } from "@/utils/supabase/client";
 import { Button, Badge } from "@mantine/core";
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from "react";
 import { getRoleArray } from "@/app/functions"
-import { Title, Flex, Text } from "@mantine/core";
+import { Title, Flex, Text, Modal } from "@mantine/core";
 import Loading from "@/app/components/loading";
 import { notifications } from "@mantine/notifications";
-
-const memberChannelName = "update-room-member";
 
 type Member = Database["public"]["Tables"]["t_room_member"]["Row"] & { t_user: Database["public"]["Tables"]["t_user"]["Row"] }
 
@@ -25,23 +24,27 @@ export default function Room() {
     const [status, setStatus] = useState<"wait" | "ready" | "playing">("wait");
     const [player, setPlayer] = useState<Database["public"]["Tables"]["t_room_member"]["Row"]>()
     const [loading, setLoading] = useState(false)
+    const [modalOpen, { open, close }] = useDisclosure(false);
+    const [modalText, setModalText] = useState("")
 
     const fetchRealtimeData = () => {
+        const chanelName = `update-room-member-${roomId}`;
         try {
-            supabase.channel(memberChannelName)
+            const channel = supabase.channel(chanelName)
                 .on(
                     "postgres_changes",
                     {
                         event: "*",
                         schema: "public",
                         table: "t_room_member",
+                        filter: `room_id=eq.${roomId}`,
                     },
                     (payload) => {
-                        if (payload.eventType === "INSERT" || payload.eventType === "DELETE") {
+                        // console.log("member", payload)
+                        if (payload.eventType === "INSERT") {
                             getRoomMember()
                         }
                         if (payload.eventType === "UPDATE" && payload.new.status !== "playing") {
-                            console.log(payload);
                             getRoomMember()
                         }
                     }
@@ -52,22 +55,29 @@ export default function Room() {
                         event: "*",
                         schema: "public",
                         table: "t_room",
+                        filter: `id=eq.${roomId}`,
                     },
                     (payload) => {
-                        if (payload.eventType === "DELETE") {
-                            router.push('/')
-                        }
+                        // console.log("room", payload)
                         if (payload.eventType === "UPDATE") {
                             if (payload.new.is_start) {
                                 setLoading(true)
                                 router.push('/game/' + roomId)
+                                return;
+                            }
+                            if (payload.new.status == "closed") {
+                                router.push('/')
+                                return;
+                            }
+                            if (payload.new.is_start == false) {
+                                getRoomMember();
                             }
                         }
                     }
                 )
                 .subscribe()
 
-            return () => supabase.channel(memberChannelName).unsubscribe()
+            return () => supabase.removeChannel(channel);
         } catch (error) {
             console.error(error)
         }
@@ -87,15 +97,13 @@ export default function Room() {
 
     const getRoomInfo = async () => {
         try {
-            const { data: room, error } = await supabase
-                .from('t_room')
-                .select('*')
-                .eq('id', roomId)
-                .single()
-            if (error) throw error
+            const { data: room, error } = await supabase.from('t_room').select('*').eq('id', roomId).single()
+            if (error) throw new Error("無効な部屋です。ロビーに戻ります。")
             setRoomInfo(room)
         } catch (error) {
-            console.error(error)
+            const message = (error instanceof Error) ? error.message : 'エラーが発生しました';
+            setModalText(message)
+            open()
         }
     }
 
@@ -106,7 +114,8 @@ export default function Room() {
                 .select('*, t_user(name), t_room(member_limit)')
                 .eq('room_id', roomId)
                 .order('created_at', { ascending: true })
-            if (error) throw error
+            if (error) throw new Error("無効な部屋です。ロビーに戻ります。");
+            if (members.length == 0) throw new Error("無効な部屋です。ロビーに戻ります。");
             setMembers(members)
             // 自分のステータスを更新
             const { data: user } = await supabase.auth.getUser()
@@ -115,12 +124,14 @@ export default function Room() {
             if (myStatus) {
                 setStatus(myStatus.status)
             }
-            const maxMemberLimit = myStatus?.t_room.member_limit
+            const maxMemberLimit = myStatus.t_room.member_limit
             // 準備完了の人数を数える
             const readyMembers = members.filter(member => member.status === 'ready')
             setStartReady(readyMembers.length === maxMemberLimit)
         } catch (error) {
-            console.error(error)
+            const message = (error instanceof Error) ? error.message : 'エラーが発生しました';
+            setModalText(message)
+            open()
         }
     }
 
@@ -132,7 +143,7 @@ export default function Room() {
             }
             const { error: selectError } = await supabase.from('t_room_member').delete().eq('user_id', user?.user?.id)
             if (selectError) throw selectError
-            // const { data, error } = await supabase.rpc('increment', { x: -1, room_id: room_id })
+            const { data, error } = await supabase.rpc('increment', { x: 1, room_id: roomId })
             router.push('/');
         } catch (error) {
             console.error(error)
@@ -153,10 +164,9 @@ export default function Room() {
             setLoading(true)
             const { data: member, error: memberError } = await supabase.from("t_room_member").delete().eq('room_id', roomId)
             if (memberError) throw memberError
-            const { data: room, error: roomError } = await supabase.from("t_room").delete().eq('id', roomId)
+            const { data: room, error: roomError } = await supabase.from("t_room").update({ status: "closed" }).eq('id', roomId)
             if (roomError) throw roomError
         } catch (error) {
-            console.error(error)
             setLoading(false)
         }
     }
@@ -195,9 +205,9 @@ export default function Room() {
 
     useEffect(() => {
         (async () => {
-            await getMyStatus();
             await getRoomInfo();
             await getRoomMember();
+            await getMyStatus();
         })()
         fetchRealtimeData();
     }, [])
@@ -242,6 +252,12 @@ export default function Room() {
                     </Flex>
                 )
             )}
+
+            <Modal opened={modalOpen} onClose={close} title="エラー">
+                <Text mb="md">{modalText}</Text>
+                <Button onClick={() => router.push('/')} w={"100%"}>ロビーに戻る</Button>
+            </Modal>
+
             {loading && <Loading />}
         </div>
     )
