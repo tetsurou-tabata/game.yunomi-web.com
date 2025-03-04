@@ -16,8 +16,6 @@ import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import PointBoard from "@/app/components/PointBoard";
 
-const roomChannelName = "update-room";
-
 type Player = Database["public"]["Tables"]["t_room_member"]["Row"] & {
     m_role: Database["public"]["Tables"]["m_role"]["Row"]
 } & {
@@ -44,14 +42,16 @@ export default function GamePage() {
     const [loading, setLoading] = useState(false)
 
     const fetchRealtimeRoomData = () => {
+        const chanelName = `update-game-${roomId}`;
         try {
-            supabase.channel(roomChannelName)
+            const channel = supabase.channel(chanelName)
                 .on(
                     "postgres_changes",
                     {
                         event: "*",
                         schema: "public",
                         table: "t_room",
+                        filter: `room_id=eq.${roomId}`,
                     },
                     (payload) => {
                         if (payload.eventType === "DELETE") {
@@ -69,6 +69,7 @@ export default function GamePage() {
                         event: "*",
                         schema: "public",
                         table: "t_room_member",
+                        filter: `room_id=eq.${roomId}`,
                     },
                     (payload) => {
                         if (payload.eventType === "UPDATE") {
@@ -79,7 +80,7 @@ export default function GamePage() {
                 )
                 .subscribe()
 
-            return () => supabase.channel(roomChannelName).unsubscribe()
+            return () => supabase.removeChannel(channel);
         } catch (error) {
             console.error(error)
         }
@@ -220,14 +221,15 @@ export default function GamePage() {
             console.log(res.data);
             const failMission = res.data.filter((member: Player) => member.mission == "no").length;
             console.log("failMission", failMission)
-            if (!roomInfo || !roomInfo.turn) throw new Error()
+            if (!roomInfo || !roomInfo.turn || !roomInfo.member_limit) throw new Error()
             const turnIndex = `turn0${roomInfo.turn}`;
             const nextTurn = (roomInfo?.turn) ? roomInfo.turn + 1 : 1;
-            const nextReader = (roomInfo?.reader != undefined) ? roomInfo.reader + 1 : 0;
+            const nextReader = (roomInfo?.reader != undefined && roomInfo.reader + 1 <= roomInfo.member_limit) ? roomInfo.reader + 1 : 0;
             const updateData = {
                 step: "formation",
                 turn: nextTurn,
                 reader: nextReader,
+                vote_count: 0,
                 [turnIndex]: failMission
             }
             console.log(updateData);
@@ -265,7 +267,7 @@ export default function GamePage() {
                 <PointBoard roomInfo={roomInfo} />
             )}
 
-            <Flex direction={'column'} gap={5}>
+            <Flex direction={'column'} gap={5} mb="md">
                 {roomInfo && roomMember && player && (
                     roomMember.map((member, index) => (
                         <Flex align={'center'} gap={5} key={index}>

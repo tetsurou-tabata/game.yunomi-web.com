@@ -26,6 +26,24 @@ export default function Main() {
     const roomNameRef = useRef<HTMLInputElement>(null);
     const maxMemberRef = useRef<HTMLSelectElement>(null);
 
+    const logout = async () => {
+        try {
+            setLoading(true)
+            const { error } = await supabase.auth.signOut()
+            if (error) throw new Error("ログアウトに失敗しました")
+            router.refresh()
+        } catch (error) {
+            const message = (error instanceof Error) ? error.message : 'エラーが発生しました';
+            notifications.show({
+                title: "エラー",
+                color: "red",
+                message: message
+            })
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const getRooms = async () => {
         try {
             const { data, error } = await supabase.from("t_room").select("*").eq("status", "wait").order('created_at', { ascending: true })
@@ -68,7 +86,11 @@ export default function Main() {
 
     const enterRoomForEntered = async () => {
         setLoading(true)
-        router.push('/room/' + enteredRoom?.room_id);
+        if (enteredRoom?.status != "playing") {
+            router.push('/room/' + enteredRoom?.room_id);
+        } else {
+            router.push('/game/' + enteredRoom?.room_id);
+        }
     }
 
     const createRoom = async () => {
@@ -112,7 +134,7 @@ export default function Main() {
             const { data: room, error } = await supabase.from("t_room_member")
                 .select("*, t_room(status)")
                 .eq("user_id", user?.user?.id)
-                .eq("t_room.status", "wait")
+                .neq("t_room.status", "closed")
                 .single()
             if (room) {
                 setEnteredRoom(room);
@@ -164,6 +186,7 @@ export default function Main() {
             <Flex direction="column" gap="md" justify="center" align="center">
                 <Button onClick={getRooms} w={"100%"} leftSection={<CachedIcon style={{ fontSize: '1rem' }} />}>更新</Button>
                 <Button onClick={open} w={"100%"} leftSection={<AddCircleIcon style={{ fontSize: '1rem' }} />}>新しい部屋を作成</Button>
+                <Button onClick={logout} w={"100%"} color='gray' mt="lg">ログアウト</Button>
             </Flex>
             <Modal opened={modalOpen} onClose={close} title="新しい部屋を作成">
                 <TextInput label="部屋名" placeholder="部屋名" ref={roomNameRef} mb={"md"} />

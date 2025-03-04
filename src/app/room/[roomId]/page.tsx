@@ -190,6 +190,7 @@ export default function Room() {
             const { error } = await supabase.from("t_room").update({
                 is_start: true,
                 step: "formation",
+                status: "playing"
             }).eq('id', roomId)
             if (error) throw error
         } catch (error) {
